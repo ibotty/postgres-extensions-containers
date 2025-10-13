@@ -20,8 +20,7 @@ in CloudNativePG.
 
 ## Supported Extensions
 
-Currently: **none**.
-This repository lays the foundation for packaging extensions going forward.
+- **first_last_agg** - PostgreSQL first_last_agg Extension
 
 ---
 
