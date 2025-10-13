@@ -165,6 +165,11 @@ jobs:
           spec:
             instances: 1
             imageName: ghcr.io/cloudnative-pg/postgresql:${PG_VER}-${DISTRO}
+            bootstrap:
+              initdb:
+                database: app
+                postInitSQL:
+                - CREATE EXTENSION first_last_agg
             postgresql:
               extensions:
                 - name: first-last-agg
