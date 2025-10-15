@@ -173,6 +173,8 @@ jobs:
                 postInitSQL:
                 - CREATE EXTENSION pg_duckdb
             postgresql:
+              shared_preload_libraries:
+              - pg_duckdb
               extensions:
                 - name: pg-duckdb
                   image:

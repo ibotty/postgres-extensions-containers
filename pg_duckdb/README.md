@@ -20,6 +20,8 @@ spec:
   instances: 1
   imageName: ghcr.io/cloudnative-pg/postgresql:18-bookworm
   postgresql:
+    shared_preload_libraries:
+    - pg_duckdb
     extensions:
       - name: pg-duckdb
         image:
