@@ -2,12 +2,14 @@ FROM ghcr.io/cloudnative-pg/postgresql:18-minimal-bookworm AS builder
 
 USER 0
 
-COPY ./ /tmp/pg_duckdb
-
 RUN set -eux; \
 	mkdir -p /opt/extension && \
 	apt-get update && \
-	apt-get install -y --no-install-recommends build-essential git "postgresql-server-dev-18=18*" && \
+	apt-get install -y --no-install-recommends build-essential git "postgresql-server-dev-18=18*"
+
+COPY . /tmp/pg_duckdb
+
+RUN set -eux; \
 	cd /tmp/pg_duckdb && \
 	PG_CONFIG=/usr/lib/postgresql/18/bin/pg_config USE_PGXS=1 make clean && \
 	PG_CONFIG=/usr/lib/postgresql/18/bin/pg_config USE_PGXS=1 OPTFLAGS="" make && \
