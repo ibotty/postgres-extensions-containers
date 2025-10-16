@@ -25,14 +25,14 @@ jobs:
       - uses: actions/checkout@v4
       
       - name: Clone pg_uuidv7 source
-        if: github.event_name == 'workflow_call'
+        if: "${{ github.event_name == 'workflow_call' }}"
         run: |
           git clone https://github.com/fboulnois/pg_uuidv7.git pg_uuidv7/source
           cd pg_uuidv7/source
           git checkout ${{ inputs.pg_uuidv7-version }}
           
       - name: Get latest pg_uuidv7 version for push
-        if: github.event_name == 'push'
+        if: "${{ github.event_name == 'push' }}"
         id: version
         run: |
           LATEST=$(curl -s https://api.github.com/repos/fboulnois/pg_uuidv7/tags | jq -r '.[0].name')
