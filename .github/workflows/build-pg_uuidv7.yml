@@ -35,7 +35,7 @@ jobs:
         if: "${{ github.event_name == 'push' }}"
         id: version
         run: |
-          LATEST=$(curl -s https://api.github.com/repos/fboulnois/pg_uuidv7/tags | jq -r '.[0].name')
+          LATEST=$(curl -fsS https://api.github.com/repos/fboulnois/pg_uuidv7/tags | jq -r '.[0].name')
           echo "version=${LATEST}" >> $GITHUB_OUTPUT
           git clone https://github.com/fboulnois/pg_uuidv7.git pg_uuidv7/source
           cd pg_uuidv7/source
@@ -95,7 +95,7 @@ jobs:
           if [ "${{ github.event_name }}" = "workflow_call" ]; then
             echo "version=${{ inputs.pg_uuidv7-version }}" >> $GITHUB_OUTPUT
           else
-            LATEST=$(curl -s https://api.github.com/repos/fboulnois/pg_uuidv7/tags | jq -r '.[0].name')
+            LATEST=$(curl -fsS https://api.github.com/repos/fboulnois/pg_uuidv7/tags | jq -r '.[0].name')
             echo "version=${LATEST}" >> $GITHUB_OUTPUT
           fi
       
@@ -117,7 +117,7 @@ jobs:
       - name: Install CloudNativePG Operator
         run: |
           # Get latest CNPG release
-          CNPG_VERSION=$(curl -s https://api.github.com/repos/cloudnative-pg/cloudnative-pg/releases/latest | jq -r '.tag_name')
+          CNPG_VERSION=$(curl -fsS https://api.github.com/repos/cloudnative-pg/cloudnative-pg/releases/latest | jq -r '.tag_name')
           echo "Installing CloudNativePG operator version: ${CNPG_VERSION}"
           
           # Extract version without 'v' prefix for branch name

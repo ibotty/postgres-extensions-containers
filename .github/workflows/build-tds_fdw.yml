@@ -81,7 +81,7 @@ jobs:
       - name: Install CloudNativePG Operator
         run: |
           # Get latest CNPG release
-          CNPG_VERSION=$(curl -s https://api.github.com/repos/cloudnative-pg/cloudnative-pg/releases/latest | jq -r '.tag_name')
+          CNPG_VERSION=$(curl -fsS https://api.github.com/repos/cloudnative-pg/cloudnative-pg/releases/latest | jq -r '.tag_name')
           echo "Installing CloudNativePG operator version: ${CNPG_VERSION}"
           
           # Extract version without 'v' prefix for branch name

@@ -18,7 +18,7 @@ jobs:
         id: check
         run: |
           # Get latest release from GitHub API
-          LATEST=$(curl -s https://api.github.com/repos/wulczer/first_last_agg/tags | jq -r '.[0].name')
+          LATEST=$(curl -fsS https://api.github.com/repos/wulczer/first_last_agg/tags | jq -r '.[0].name')
           
           # Check if we already built this version
           if git tag | grep -q "first_last_agg-${LATEST}"; then
