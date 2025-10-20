@@ -19,6 +19,10 @@ jobs:
         run: |
           # Get latest release from GitHub API
           LATEST=$(curl -fsS https://api.github.com/repos/duckdb/pg_duckdb/releases/latest | jq -r '.tag_name')
+
+          # show git tags
+          echo git tags:
+          git tag
           
           # Check if we already built this version
           if git tag | grep -q "pg_duckdb-${LATEST}"; then
