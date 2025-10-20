@@ -12,7 +12,9 @@ jobs:
       new-version: ${{ steps.check.outputs.new-version }}
       should-build: ${{ steps.check.outputs.should-build }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
+      - name: Fetch git tags
+        run: git fetch --prune --unshallow --tags
       
       - name: Check for new pg_duckdb release
         id: check
