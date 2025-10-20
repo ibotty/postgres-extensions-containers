@@ -1,12 +1,15 @@
 name: Build first_last_agg Extension
 
+env:
+  REPO: wulczer/first_last_agg
+
 on:
   push:
     paths:
       - 'first_last_agg/**'
   workflow_call:
     inputs:
-      first_last_agg-version:
+      package-version:
         required: true
         type: string
       pg-version:
@@ -23,39 +26,41 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Clone first_last_agg source
-        if: "${{ github.event_name == 'workflow_call' }}"
+
+      - name: Get latest package version
+        id: latest
         run: |
-          git clone https://github.com/wulczer/first_last_agg.git first_last_agg/source
-          cd first_last_agg/source
-          git checkout ${{ inputs.first_last_agg-version }}
-          
-      - name: Get latest first_last_agg version for push
-        if: "${{ github.event_name == 'push' }}"
+          LATEST=$(curl -fsS https://api.github.com/repos/${REPO}/tags | jq -r '.[0].name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+
+      - name: Set package version to build
         id: version
         run: |
-          LATEST=$(curl -fsS https://api.github.com/repos/wulczer/first_last_agg/tags | jq -r '.[0].name')
-          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+          PACKAGE_VER="${{ inputs.package-version || steps.latest.outputs.version }}"
+          echo Using "version=$PACKAGE_VER"
+          echo "version=${PACKAGE_VER}" >> $GITHUB_OUTPUT
+
+      - name: Clone first_last_agg source
+        run: |
           git clone https://github.com/wulczer/first_last_agg.git first_last_agg/source
           cd first_last_agg/source
-          git checkout ${LATEST}
-          
+          git checkout ${{ steps.version.outputs.version }}
+
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
-        
+
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-          
+
       - name: Build and push
         run: |
           cd first_last_agg
-          FIRST_LAST_AGG_VER="${{ inputs.first_last_agg-version || steps.version.outputs.version }}"
-          
+          FIRST_LAST_AGG_VER="${{ steps.version.outputs.version }}"
+
           # Choose target and set variables based on branch
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             # Build all combinations for main branch
@@ -82,23 +87,26 @@ jobs:
               ${TARGET} \
               --push
           fi
-            
+
   smoke-test:
     needs: build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Get version from build
-        id: get-version
+
+      - name: Get latest package version
+        id: latest
         run: |
-          if [ "${{ github.event_name }}" = "workflow_call" ]; then
-            echo "version=${{ inputs.first_last_agg-version }}" >> $GITHUB_OUTPUT
-          else
-            LATEST=$(curl -fsS https://api.github.com/repos/wulczer/first_last_agg/tags | jq -r '.[0].name')
-            echo "version=${LATEST}" >> $GITHUB_OUTPUT
-          fi
-      
+          LATEST=$(curl -fsS https://api.github.com/repos/${REPO}/tags | jq -r '.[0].name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+
+      - name: Set package version to build
+        id: version
+        run: |
+          PACKAGE_VER="${{ inputs.package-version || steps.latest.outputs.version }}"
+          echo Using "version=$PACKAGE_VER"
+          echo "version=${PACKAGE_VER}" >> $GITHUB_OUTPUT
+
       - name: Setup Kind Cluster
         uses: helm/kind-action@v1
         with:
@@ -113,48 +121,48 @@ jobs:
       #     echo "Kind cluster 'kind' is ready."
       #     kubectl cluster-info
       #     kubectl get nodes
-          
+
       - name: Install CloudNativePG Operator
         run: |
           # Get latest CNPG release
           CNPG_VERSION=$(curl -fsS https://api.github.com/repos/cloudnative-pg/cloudnative-pg/releases/latest | jq -r '.tag_name')
           echo "Installing CloudNativePG operator version: ${CNPG_VERSION}"
-          
+
           # Extract version without 'v' prefix for branch name
           BRANCH_VERSION=$(echo ${CNPG_VERSION} | sed 's/^v//' | cut -d. -f1,2)
-          
+
           # Install CNPG operator using correct URL format
           kubectl apply --server-side -f https://raw.githubusercontent.com/cloudnative-pg/cloudnative-pg/release-${BRANCH_VERSION}/releases/cnpg-${CNPG_VERSION#v}.yaml
-          
+
       - name: Verify CNPG Operator Installation
         run: |
           # Wait for operator deployment to be ready
           kubectl wait --for=condition=Available deployment/cnpg-controller-manager -n cnpg-system --timeout=120s
-          
+
           # Check operator status
           kubectl get pods -n cnpg-system
           kubectl get deployment -n cnpg-system
-          
+
           # Verify CRDs are installed
           kubectl get crd | grep postgresql
-          
+
           echo "✅ CloudNativePG operator installed successfully"
 
       - name: Create Postgres Cluster with Extension
         run: |
           PG_VER="${{ inputs.pg-version || '18' }}"
           DISTRO="${{ inputs.distro || 'bookworm' }}"
-          FIRST_LAST_AGG_VER="${{ steps.get-version.outputs.version }}"
-          
+          FIRST_LAST_AGG_VER="${{ steps.version.outputs.version }}"
+
           # Set image tag based on branch
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
             IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/first_last_agg:${PG_VER}-${FIRST_LAST_AGG_VER}-${DISTRO}"
           else
             IMAGE_TAG="ghcr.io/${{ github.repository_owner }}/first_last_agg:${PG_VER}-${FIRST_LAST_AGG_VER}-${{ github.ref_name }}-${DISTRO}"
           fi
-          
+
           echo "Testing with image: ${IMAGE_TAG}"
-          
+
           # Create test pod with first_last_agg extension
           kubectl apply -f - <<EOF
           apiVersion: postgresql.cnpg.io/v1
@@ -181,19 +189,19 @@ jobs:
           EOF
           kubectl wait --for=jsonpath='{.status.phase}=Cluster in healthy state' cluster/postgresql-with-extensions --timeout=300s -n cnpg-system
           echo "✅ PostgreSQL cluster with first_last_agg extension is ready"
-          
+
       - name: Verify first_last_agg Extension
         run: |
           EXTENSION_NAME="first_last_agg"
           NAMESPACE="cnpg-system"
           POD_NAME="postgresql-with-extensions-1"
           CONTAINER_NAME="postgres"
-          
+
           echo "🔍 Checking if ${EXTENSION_NAME} extension is available..."
-          
+
           # Wait a bit for the extension to be fully loaded
           sleep 10
-          
+
           # Check if extension is available in pg_available_extensions
           if kubectl exec "$POD_NAME" -n "$NAMESPACE" -c "$CONTAINER_NAME" -- sh -c \
              "psql -U postgres -d postgres -t -c \"SELECT name FROM pg_available_extensions WHERE name = '$EXTENSION_NAME';\"" | \
@@ -202,9 +210,9 @@ jobs:
           else
               echo "❌ Failure! The '$EXTENSION_NAME' extension was NOT found in pg_available_extensions."
           fi
-          
+
       - name: Tag successful build
         if: success() && github.ref == 'refs/heads/main'
         run: |
-          git tag "first_last_agg-${{ steps.get-version.outputs.version }}"
-          git push origin "first_last_agg-${{ steps.get-version.outputs.version }}"
+          git tag "first_last_agg-${{ steps.version.outputs.version }}"
+          git push origin "first_last_agg-${{ steps.version.outputs.version }}"

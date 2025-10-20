@@ -1,12 +1,15 @@
 name: Build pg_duckdb Extension
 
+env:
+  REPO: duckdb/pg_duckdb
+
 on:
   push:
     paths:
       - 'pg_duckdb/**'
   workflow_call:
     inputs:
-      pg_duckdb-version:
+      package-version:
         required: true
         type: string
       pg-version:
@@ -23,24 +26,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      
-      - name: Clone pg_duckdb source
-        if: "${{ github.event_name == 'workflow_call' }}"
+
+      - name: Get latest package version
+        id: latest
         run: |
-          git clone https://github.com/duckdb/pg_duckdb.git pg_duckdb/source
-          cd pg_duckdb/source
-          git checkout ${{ inputs.pg_duckdb-version }}
-          git submodule update --init --recursive
-          
-      - name: Get latest pg_duckdb version for push
-        if: "${{ github.event_name == 'push' }}"
+          LATEST=$(curl -fsS https://api.github.com/repos/${REPO}/tags | jq -r '.[0].name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+
+      - name: Set package version to build
         id: version
         run: |
-          LATEST=$(curl -fsS https://api.github.com/repos/duckdb/pg_duckdb/tags | jq -r '.[0].name')
-          echo "version=${LATEST}" >> $GITHUB_OUTPUT
-          git clone https://github.com/duckdb/pg_duckdb.git pg_duckdb/source
+          PACKAGE_VER="${{ inputs.package-version || steps.latest.outputs.version }}"
+          echo Using "version=$PACKAGE_VER"
+          echo "version=${PACKAGE_VER}" >> $GITHUB_OUTPUT
+      
+      - name: Get latest package version
+        run: |
+          git clone https://github.com/${REPO}.git pg_duckdb/source
           cd pg_duckdb/source
-          git checkout ${LATEST}
+          git checkout ${{ steps.version.outputs.version}}
           git submodule update --init --recursive
           
       - name: Set up Docker Buildx
@@ -56,7 +60,7 @@ jobs:
       - name: Build and push
         run: |
           cd pg_duckdb
-          PG_DUCKDB_VER="${{ inputs.pg_duckdb-version || steps.version.outputs.version }}"
+          PG_DUCKDB_VER="${{ steps.version.outputs.version }}"
           
           # Choose target and set variables based on branch
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
@@ -91,15 +95,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Get version from build
-        id: get-version
+      - name: Get latest package version
+        id: latest
         run: |
-          if [ "${{ github.event_name }}" = "workflow_call" ]; then
-            echo "version=${{ inputs.pg_duckdb-version }}" >> $GITHUB_OUTPUT
-          else
-            LATEST=$(curl -fsS https://api.github.com/repos/duckdb/pg_duckdb/tags | jq -r '.[0].name')
-            echo "version=${LATEST}" >> $GITHUB_OUTPUT
-          fi
+          LATEST=$(curl -fsS https://api.github.com/repos/${REPO}/tags | jq -r '.[0].name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+
+      - name: Set package version to build
+        id: version
+        run: |
+          PACKAGE_VER="${{ inputs.package-version || steps.latest.outputs.version }}"
+          echo Using "version=$PACKAGE_VER"
+          echo "version=${PACKAGE_VER}" >> $GITHUB_OUTPUT
       
       - name: Setup Kind Cluster
         uses: helm/kind-action@v1
@@ -146,7 +153,7 @@ jobs:
         run: |
           PG_VER="${{ inputs.pg-version || '18' }}"
           DISTRO="${{ inputs.distro || 'bookworm' }}"
-          PG_DUCKDB_VER="${{ steps.get-version.outputs.version }}"
+          PG_DUCKDB_VER="${{ steps.version.outputs.version }}"
           
           # Set image tag based on branch
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
@@ -210,5 +217,5 @@ jobs:
       - name: Tag successful build
         if: success() && github.ref == 'refs/heads/main'
         run: |
-          git tag "pg_duckdb-${{ steps.get-version.outputs.version }}"
-          git push origin "pg_duckdb-${{ steps.get-version.outputs.version }}"
+          git tag "pg_duckdb-${{ steps.version.outputs.version }}"
+          git push origin "pg_duckdb-${{ steps.version.outputs.version }}"

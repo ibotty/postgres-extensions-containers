@@ -37,5 +37,5 @@ jobs:
     if: needs.check-release.outputs.should-build == 'true'
     uses: ./.github/workflows/build-pg_duckdb.yml
     with:
-      pg_duckdb-version: ${{ needs.check-release.outputs.new-version }}
+      package-version: ${{ needs.check-release.outputs.new-version }}
     secrets: inherit

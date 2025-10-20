@@ -37,5 +37,5 @@ jobs:
     if: needs.check-release.outputs.should-build == 'true'
     uses: ./.github/workflows/build-pg_uuidv7.yml
     with:
-      pg_uuidv7-version: ${{ needs.check-release.outputs.new-version }}
+      package-version: ${{ needs.check-release.outputs.new-version }}
     secrets: inherit

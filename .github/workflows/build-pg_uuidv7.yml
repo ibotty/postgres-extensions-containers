@@ -24,22 +24,24 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Clone pg_uuidv7 source
-        if: "${{ github.event_name == 'workflow_call' }}"
+      - name: Get latest package version
+        id: latest
         run: |
-          git clone https://github.com/fboulnois/pg_uuidv7.git pg_uuidv7/source
-          cd pg_uuidv7/source
-          git checkout ${{ inputs.pg_uuidv7-version }}
-          
-      - name: Get latest pg_uuidv7 version for push
-        if: "${{ github.event_name == 'push' }}"
+          LATEST=$(curl -fsS https://api.github.com/repos/${REPO}/tags | jq -r '.[0].name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+
+      - name: Set package version to build
         id: version
         run: |
-          LATEST=$(curl -fsS https://api.github.com/repos/fboulnois/pg_uuidv7/tags | jq -r '.[0].name')
-          echo "version=${LATEST}" >> $GITHUB_OUTPUT
-          git clone https://github.com/fboulnois/pg_uuidv7.git pg_uuidv7/source
+          PACKAGE_VER="${{ inputs.package-version || steps.latest.outputs.version }}"
+          echo Using "version=$PACKAGE_VER"
+          echo "version=${PACKAGE_VER}" >> $GITHUB_OUTPUT
+
+      - name: Clone package source
+        run: |
+          git clone https://github.com/${REPO}.git pg_uuidv7/source
           cd pg_uuidv7/source
-          git checkout ${LATEST}
+          git checkout ${{ steps.version.outputs.version }}
           
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -54,7 +56,7 @@ jobs:
       - name: Build and push
         run: |
           cd pg_uuidv7
-          PG_UUIDV7_VER="${{ inputs.pg_uuidv7-version || steps.version.outputs.version }}"
+          PG_UUIDV7_VER="${{ steps.version.outputs.version }}"
           
           # Choose target and set variables based on branch
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
@@ -89,15 +91,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       
-      - name: Get version from build
-        id: get-version
+      - name: Get latest package version
+        id: latest
         run: |
-          if [ "${{ github.event_name }}" = "workflow_call" ]; then
-            echo "version=${{ inputs.pg_uuidv7-version }}" >> $GITHUB_OUTPUT
-          else
-            LATEST=$(curl -fsS https://api.github.com/repos/fboulnois/pg_uuidv7/tags | jq -r '.[0].name')
-            echo "version=${LATEST}" >> $GITHUB_OUTPUT
-          fi
+          LATEST=$(curl -fsS https://api.github.com/repos/${REPO}/tags | jq -r '.[0].name')
+          echo "version=${LATEST}" >> $GITHUB_OUTPUT
+
+      - name: Set package version to build
+        id: version
+        run: |
+          PACKAGE_VER="${{ inputs.package-version || steps.latest.outputs.version }}"
+          echo Using "version=$PACKAGE_VER"
+          echo "version=${PACKAGE_VER}" >> $GITHUB_OUTPUT
       
       - name: Setup Kind Cluster
         uses: helm/kind-action@v1
@@ -144,7 +149,7 @@ jobs:
         run: |
           PG_VER="${{ inputs.pg-version || '18' }}"
           DISTRO="${{ inputs.distro || 'bookworm' }}"
-          PG_UUIDV7_VER="${{ steps.get-version.outputs.version }}"
+          PG_UUIDV7_VER="${{ steps.version.outputs.version }}"
           
           # Set image tag based on branch
           if [ "${{ github.ref }}" = "refs/heads/main" ]; then
@@ -206,5 +211,5 @@ jobs:
       - name: Tag successful build
         if: success() && github.ref == 'refs/heads/main'
         run: |
-          git tag "pg_uuidv7-${{ steps.get-version.outputs.version }}"
-          git push origin "pg_uuidv7-${{ steps.get-version.outputs.version }}"
+          git tag "pg_uuidv7-${{ steps.version.outputs.version }}"
+          git push origin "pg_uuidv7-${{ steps.version.outputs.version }}"

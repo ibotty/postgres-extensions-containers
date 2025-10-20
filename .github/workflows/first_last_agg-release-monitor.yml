@@ -37,5 +37,5 @@ jobs:
     if: needs.check-release.outputs.should-build == 'true'
     uses: ./.github/workflows/build-first_last_agg.yml
     with:
-      first_last_agg-version: ${{ needs.check-release.outputs.new-version }}
+      package-version: ${{ needs.check-release.outputs.new-version }}
     secrets: inherit
