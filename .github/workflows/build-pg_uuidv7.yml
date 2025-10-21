@@ -6,7 +6,7 @@ on:
       - 'pg_uuidv7/**'
   workflow_call:
     inputs:
-      pg_uuidv7-version:
+      package-version:
         required: true
         type: string
       pg-version:
