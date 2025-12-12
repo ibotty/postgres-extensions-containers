@@ -10,11 +10,11 @@ RUN set -eux; \
 COPY . /tmp/pg_duckdb
 
 RUN set -eux; \
-        apt-get install -y --no-install-recommends build-essential \
-        libreadline-dev zlib1g-dev flex bison libxml2-dev \
+        apt-get install -y --no-install-recommends \
+        build-essential libreadline-dev zlib1g-dev flex bison libxml2-dev \
         libxslt-dev libssl-dev libxml2-utils xsltproc pkg-config libc++-dev \
         libc++abi-dev libglib2.0-dev libtinfo6 cmake libstdc++-12-dev \
-        liblz4-dev ninja-build
+        liblz4-dev libcurl4-openssl-dev ninja-build
 
 RUN set -eux; \
 	cd /tmp/pg_duckdb && \
