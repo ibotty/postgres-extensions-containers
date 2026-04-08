@@ -186,6 +186,8 @@ jobs:
                 - name: pg-duckdb
                   image:
                     reference: ${IMAGE_TAG}
+                  ld_library_path:
+                  - system
             storage:
               storageClass: standard
               size: 1Gi

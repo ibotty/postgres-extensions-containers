@@ -26,6 +26,8 @@ spec:
       - name: pg-duckdb
         image:
           reference: ghcr.io/cloudnative-pg/pg_duckdb:18-1.0.0-bookworm
+        ld_library_path:
+        - system
   storage:
     size: 1Gi
 ```
