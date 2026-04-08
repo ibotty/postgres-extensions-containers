@@ -1,0 +1,6 @@
+libbrotli1_1.0.9-2+b6_amd64.deb MD5Sum:58aff9bd35bab67549bdc84eb7edffcf
+libcurl4_7.88.1-10+deb12u14_amd64.deb MD5Sum:72a0750a6cbd7bf11a832966a933fe13
+libnghttp2-14_1.52.0-1+deb12u2_amd64.deb MD5Sum:ece467e644497f898d202ea0e5955cb2
+libpsl5_0.21.2-1_amd64.deb MD5Sum:37ebfb57fdbf01631629ee9f36c8b478
+librtmp1_2.4+20151223.gitfa8646d.1-2+b2_amd64.deb MD5Sum:d757abb668fc1ee0d9488805bfb4371e
+libssh2-1_1.10.0-3+b1_amd64.deb MD5Sum:14bb6443448b5fc0477e7c76ca9ba4a5
