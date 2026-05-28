@@ -41,6 +41,7 @@ from a trusted, auditable repository
 | **[pgvector](pgvector)** | Vector similarity search for PostgreSQL | [github.com/pgvector/pgvector](https://github.com/pgvector/pgvector) | CNPG maintainers |
 | **[PostGIS](postgis)** | Geospatial database extension for PostgreSQL | [postgis.net/](https://postgis.net/) | CNPG maintainers |
 | **[TimescaleDB Apache-2 Edition](timescaledb-oss)** | Time-series database for PostgreSQL (open source version) | [github.com/timescale/timescaledb/](https://github.com/timescale/timescaledb/) | @shusaan |
+| **[wal2json](wal2json)** | Logical decoding output plugin for PostgreSQL | [github.com/eulerto/wal2json](https://github.com/eulerto/wal2json) | @solidDoWant |
 
 > [!NOTE]
 > PostGIS is licensed under GPL-2.0, which is not on the CNCF Allowlist. It

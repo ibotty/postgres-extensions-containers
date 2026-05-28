@@ -6,3 +6,6 @@
 
 # TimescaleDB (OSS version)
 /timescaledb-oss/ @shusaan @cloudnative-pg/maintainers @NiccoloFei
+
+# wal2json
+/wal2json/ @cloudnative-pg/maintainers @NiccoloFei @solidDoWant
