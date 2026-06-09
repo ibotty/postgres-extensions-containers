@@ -37,17 +37,30 @@ type testingExtensionInfo struct {
 	CreateExtension bool
 }
 
-func generateTestingValuesExtensions(ctx context.Context, source *dagger.Directory, metadata *extensionMetadata,
-	extensionImage string, version string, registryUsername string, registryPassword *dagger.Secret) ([]*testingExtensionInfo, error) {
+type imageLocator struct {
+	ExtensionImage string
+	PgMajor        int
+	SQLVersion     string
+	Distribution   string
+}
+
+func generateTestingValuesExtensions(
+	ctx context.Context,
+	source *dagger.Directory,
+	metadata *extensionMetadata,
+	locator imageLocator,
+	registryUsername string,
+	registryPassword *dagger.Secret,
+) ([]*testingExtensionInfo, error) {
 	var out []*testingExtensionInfo
-	configuration, err := generateExtensionConfiguration(metadata, extensionImage)
+	configuration, err := generateExtensionConfiguration(metadata, locator.ExtensionImage)
 	if err != nil {
 		return nil, err
 	}
 	out = append(out, &testingExtensionInfo{
 		Configuration:   configuration,
 		SQLName:         metadata.SQLName,
-		Version:         version,
+		Version:         locator.SQLVersion,
 		CreateExtension: metadata.CreateExtension,
 	})
 
@@ -64,7 +77,11 @@ func generateTestingValuesExtensions(ctx context.Context, source *dagger.Directo
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse dependency metadata %q: %w", dep, err)
 		}
-		depConfiguration, err := generateExtensionConfiguration(depMetadata, "")
+		requiredExtensionImage, err := getExtensionImage(depMetadata, locator.Distribution, locator.PgMajor)
+		if err != nil {
+			return nil, err
+		}
+		depConfiguration, err := generateExtensionConfiguration(depMetadata, requiredExtensionImage)
 		if err != nil {
 			return nil, err
 		}
