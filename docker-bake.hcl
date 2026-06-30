@@ -39,10 +39,7 @@ target "default" {
     distro = distributions
   }
 
-  platforms = [
-    "linux/amd64",
-    "linux/arm64"
-  ]
+  platforms = try(metadata.platforms, ["linux/amd64", "linux/arm64"])
 
   dockerfile = "Dockerfile"
   context = "${metadata.name}/"
