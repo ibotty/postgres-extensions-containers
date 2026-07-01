@@ -27,6 +27,6 @@ COPY --from=builder /tmp/pg-trickle/LICENSE /licenses/pg-trickle/
 COPY --from=builder /tmp/pg-trickle/lib/* /lib/
 
 # Share
-COPY --from=builder /tmp/pg-trickle//extension/* /share/extension/
+COPY --from=builder /tmp/pg-trickle/extension/* /share/extension/
 
 USER 65532:65532
